@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm Tra Thường Xuyên - Tin Học 7</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #FDFBF7;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Tùy chỉnh thanh cuộn */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Hiệu ứng kéo thả thực thụ cho Câu 1 */
+        .draggable-item {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .draggable-item.dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+        
+        .drop-zone {
+            min-height: 120px;
+            transition: all 0.2s ease;
+        }
+        
+        .drop-zone.active-target {
+            background-color: #DBEAFE !important;
+            border-color: #3B82F6 !important;
+            border-style: dashed !important;
+        }
+
+        /* SVG cho phần nối */
+        #q2-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .match-item {
+            position: relative;
+            z-index: 1;
+            transition: all 0.2s;
+        }
+
+        .match-item.selected {
+            box-shadow: 0 0 0 4px #F472B6;
+            transform: scale(1.02);
+            border-color: #DB2777;
+        }
+        
+        .match-item.linked {
+            background-color: #F0FDF4;
+            border-color: #22C55E;
+        }
+
+        /* Custom Radio & Checkbox */
+        .custom-radio:checked + div {
+            background-color: #DBEAFE;
+            border-color: #2563EB;
+        }
+        .custom-radio:checked + div .radio-dot {
+            background-color: #2563EB;
+            transform: scale(1);
+        }
+
+        /* Trạng thái chấm điểm */
+        .question-card {
+            transition: border-color 0.3s, box-shadow 0.3s;
+            border: 4px solid transparent;
+        }
+        
+        .status-correct {
+            border-color: #22C55E !important;
+            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.2) !important;
+        }
+        
+        .status-incorrect {
+            border-color: #EF4444 !important;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2) !important;
+        }
+
+        #modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- MÀN HÌNH ĐĂNG NHẬP -->
+    <div id="login-screen" class="flex-1 flex items-center justify-center p-4 z-50 absolute inset-0 bg-[#FDFBF7] bg-opacity-95">
+        <div class="bg-white p-8 rounded-3xl shadow-xl max-w-lg w-full border-t-8 border-blue-600">
+            <div class="text-center mb-8">
+                <div class="inline-block bg-blue-100 p-4 rounded-full mb-4">
+                    <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h1 class="text-2xl font-bold text-blue-900 mb-2 uppercase">KIỂM TRA THƯỜNG XUYÊN</h1>
+                <h2 class="text-xl font-bold text-pink-600">BÀI 6: LÀM QUEN VỚI PHẦN MỀM BẢNG TÍNH</h2>
+                <p class="text-gray-500 mt-2 font-semibold">Môn: Tin học - Lớp: 7</p>
+                <div class="mt-4 text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg text-left">
+                    <p><strong>⏱ Thời gian:</strong> 15 phút</p>
+                    <p><strong>🎯 Tổng điểm:</strong> 10 điểm</p>
+                    <p><strong>📝 Hướng dẫn:</strong> Đọc kĩ câu hỏi và hoàn thành 5 dạng bài.</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2 text-lg">Họ và tên của em:</label>
+                    <input type="text" id="input-name" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition text-lg" placeholder="Nhập họ và tên..." required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2 text-lg">Lớp:</label>
+                    <input type="text" id="input-class" class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition text-lg" placeholder="Ví dụ: 7A1" required>
+                </div>
+                <button onclick="startQuiz()" class="w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-xl py-4 rounded-xl shadow-lg transform transition hover:-translate-y-1">
+                    🚀 BẮT ĐẦU LÀM BÀI
+                </button>
+                <p id="login-error" class="text-red-500 text-center font-bold hidden mt-2">Vui lòng nhập đầy đủ Họ tên và Lớp!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH LÀM BÀI -->
+    <div id="quiz-screen" class="hidden flex-col min-h-screen">
+        
+        <!-- Thanh công cụ cố định trên cùng -->
+        <div class="sticky top-0 z-40 bg-white shadow-md border-b-4 border-blue-600 px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg font-bold">
+                    👤 <span id="display-name">Nguyễn Văn A</span> - <span id="display-class">7A1</span>
+                </div>
+            </div>
+            
+            <div class="flex-1 max-w-md mx-4 hidden md:block">
+                <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-green-500 transition-all duration-1000 ease-linear" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="bg-pink-100 text-pink-700 px-4 py-2 rounded-xl font-black text-xl flex items-center gap-2 shadow-inner border border-pink-200">
+                    ⏱ <span id="timer-display">15:00</span>
+                </div>
+                <button onclick="confirmSubmit()" id="btn-submit-top" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-xl shadow transition transform hover:scale-105">
+                    CHẤM ĐIỂM
+                </button>
+            </div>
+        </div>
+
+        <!-- Nội dung chính -->
+        <div class="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 space-y-8 pb-24">
+            
+            <div class="text-center mt-4 mb-8">
+                <h2 class="text-2xl md:text-3xl font-black text-blue-900 uppercase">KIỂM TRA THƯỜNG XUYÊN - BÀI 6</h2>
+            </div>
+
+            <!-- CÂU 1: KÉO - THẢ THỰC THỤ -->
+            <div id="card-q1" class="question-card bg-white p-6 rounded-2xl shadow-md border-2 border-gray-100 relative">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="bg-blue-600 text-white font-black text-xl rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow">C1</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 uppercase">Câu 1 – Kéo thả (2 Điểm)</h3>
+                        <p class="text-gray-600 text-lg">Kéo và thả các thao tác vào đúng nhóm phù hợp với việc nhập và điều chỉnh dữ liệu trên bảng tính (Mỗi ý đúng 0.5 điểm).</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
+                    <p class="font-bold text-gray-700 mb-3">Các thẻ thao tác:</p>
+                    <div id="q1-pool" class="drop-zone flex flex-wrap gap-3 min-h-[60px] p-2" data-zone="pool"></div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-blue-50 rounded-xl border-2 border-blue-200 p-4 flex flex-col">
+                        <h4 class="font-bold text-blue-800 text-lg mb-3 text-center border-b-2 border-blue-200 pb-2">A. Nhập dữ liệu</h4>
+                        <div id="q1-zone-a" class="drop-zone flex-1 flex flex-col gap-2 p-2 rounded-lg border-2 border-dashed border-blue-200 bg-white" data-zone="A"></div>
+                    </div>
+                    <div class="bg-pink-50 rounded-xl border-2 border-pink-200 p-4 flex flex-col">
+                        <h4 class="font-bold text-pink-800 text-lg mb-3 text-center border-b-2 border-pink-200 pb-2">B. Điều chỉnh/định dạng dữ liệu</h4>
+                        <div id="q1-zone-b" class="drop-zone flex-1 flex flex-col gap-2 p-2 rounded-lg border-2 border-dashed border-pink-200 bg-white" data-zone="B"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CÂU 2: NỐI -->
+            <div id="card-q2" class="question-card bg-white p-6 rounded-2xl shadow-md border-2 border-gray-100 relative">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="bg-blue-600 text-white font-black text-xl rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow">C2</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 uppercase">Câu 2 – Nối (2 Điểm)</h3>
+                        <p class="text-gray-600 text-lg">Chạm/Click vào mục ở cột trái, sau đó chọn mục tương ứng ở cột phải để nối khái niệm với mô tả phù hợp.</p>
+                    </div>
+                </div>
+
+                <div id="q2-container" class="relative bg-gray-50 p-4 md:p-8 rounded-xl border border-gray-200">
+                    <svg id="q2-svg"></svg>
+                    <div class="grid grid-cols-2 gap-8 md:gap-16">
+                        <div class="flex flex-col gap-4" id="q2-left-col">
+                            <div class="match-item left-item bg-white border-2 border-blue-300 rounded-lg p-4 cursor-pointer hover:bg-blue-50 font-bold text-lg text-center" data-id="A" onclick="handleMatchSelect(this, 'left')">A. Ô tính</div>
+                            <div class="match-item left-item bg-white border-2 border-blue-300 rounded-lg p-4 cursor-pointer hover:bg-blue-50 font-bold text-lg text-center" data-id="B" onclick="handleMatchSelect(this, 'left')">B. Hàng</div>
+                            <div class="match-item left-item bg-white border-2 border-blue-300 rounded-lg p-4 cursor-pointer hover:bg-blue-50 font-bold text-lg text-center" data-id="C" onclick="handleMatchSelect(this, 'left')">C. Cột</div>
+                            <div class="match-item left-item bg-white border-2 border-blue-300 rounded-lg p-4 cursor-pointer hover:bg-blue-50 font-bold text-lg text-center" data-id="D" onclick="handleMatchSelect(this, 'left')">D. Trang tính</div>
+                        </div>
+                        <div class="flex flex-col gap-4" id="q2-right-col">
+                            <div class="match-item right-item bg-white border-2 border-pink-300 rounded-lg p-4 cursor-pointer hover:bg-pink-50 text-md md:text-lg flex items-center" data-id="1" onclick="handleMatchSelect(this, 'right')">1. Vùng gồm các ô được sắp xếp theo chiều ngang.</div>
+                            <div class="match-item right-item bg-white border-2 border-pink-300 rounded-lg p-4 cursor-pointer hover:bg-pink-50 text-md md:text-lg flex items-center" data-id="2" onclick="handleMatchSelect(this, 'right')">2. Vùng gồm các ô được sắp xếp theo chiều dọc.</div>
+                            <div class="match-item right-item bg-white border-2 border-pink-300 rounded-lg p-4 cursor-pointer hover:bg-pink-50 text-md md:text-lg flex items-center" data-id="3" onclick="handleMatchSelect(this, 'right')">3. Vùng làm việc dùng để nhập và tổ chức dữ liệu trong bảng tính.</div>
+                            <div class="match-item right-item bg-white border-2 border-pink-300 rounded-lg p-4 cursor-pointer hover:bg-pink-50 text-md md:text-lg flex items-center" data-id="4" onclick="handleMatchSelect(this, 'right')">4. Đơn vị dùng để nhập dữ liệu trong bảng tính.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CÂU 3: TRẮC NGHIỆM -->
+            <div id="card-q3" class="question-card bg-white p-6 rounded-2xl shadow-md border-2 border-gray-100 relative">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="bg-blue-600 text-white font-black text-xl rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow">C3</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 uppercase">Câu 3 – Trắc nghiệm (2 Điểm)</h3>
+                        <p class="text-gray-600 text-lg">Chọn đáp án đúng nhất cho mỗi câu hỏi dưới đây.</p>
+                    </div>
+                </div>
+
+                <!-- 3.1 -->
+                <div class="mb-8 p-4 bg-gray-50 rounded-xl">
+                    <p class="font-bold text-lg mb-4 text-gray-800">Câu 3.1 (1 điểm): Trong bảng tính, mỗi ô được xác định bởi:</p>
+                    <div class="space-y-3">
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_1" value="A" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">A. Tên hàng và cột</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_1" value="B" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">B. Màu sắc của ô</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_1" value="C" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">C. Nội dung trong ô</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_1" value="D" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">D. Độ rộng của cột</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3.2 -->
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <p class="font-bold text-lg mb-4 text-gray-800">Câu 3.2 (1 điểm): Phát biểu nào sau đây đúng nhất về phần mềm bảng tính?</p>
+                    <div class="space-y-3">
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_2" value="A" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">A. Chỉ dùng để nhập văn bản và hình ảnh.</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_2" value="B" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">B. Cho phép nhập, tổ chức và điều chỉnh dữ liệu trong các ô của bảng tính.</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_2" value="C" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">C. Chỉ dùng để thay đổi màu nền của bảng.</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center cursor-pointer group">
+                            <input type="radio" name="q3_2" value="D" class="custom-radio hidden">
+                            <div class="flex items-center w-full p-3 border-2 border-gray-200 rounded-lg group-hover:bg-gray-100 transition">
+                                <div class="w-6 h-6 rounded-full border-2 border-gray-400 mr-3 flex items-center justify-center flex-shrink-0"><div class="radio-dot w-3 h-3 rounded-full scale-0 transition-transform duration-200"></div></div>
+                                <span class="text-lg">D. Chỉ dùng để tạo các hình ảnh minh họa.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CÂU 4: ĐÚNG / SAI -->
+            <div id="card-q4" class="question-card bg-white p-6 rounded-2xl shadow-md border-2 border-gray-100 relative">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="bg-blue-600 text-white font-black text-xl rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow">C4</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 uppercase">Câu 4 – Đúng / Sai (2 Điểm)</h3>
+                        <p class="text-gray-600 text-lg">Đọc kĩ từng phát biểu và chọn Đúng hoặc Sai.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 hover:border-blue-300 transition">
+                        <p class="text-lg flex-1">1. Có thể nhập dữ liệu trực tiếp vào từng ô tính.</p>
+                        <div class="flex gap-4 flex-shrink-0">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_1" value="Đúng" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">ĐÚNG</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_1" value="Sai" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">SAI</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 hover:border-blue-300 transition">
+                        <p class="text-lg flex-1">2. Có thể sao chép một vùng dữ liệu từ trang tính khác hoặc từ một vùng khác.</p>
+                        <div class="flex gap-4 flex-shrink-0">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_2" value="Đúng" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">ĐÚNG</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_2" value="Sai" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">SAI</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 hover:border-blue-300 transition">
+                        <p class="text-lg flex-1">3. Muốn xóa nhanh dữ liệu trong một vùng, có thể chọn vùng cần xóa rồi nhấn phím Delete.</p>
+                        <div class="flex gap-4 flex-shrink-0">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_3" value="Đúng" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">ĐÚNG</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_3" value="Sai" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">SAI</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-200 hover:border-blue-300 transition">
+                        <p class="text-lg flex-1">4. Phần mềm bảng tính chỉ cho phép nhập dữ liệu, không thể điều chỉnh hoặc định dạng dữ liệu.</p>
+                        <div class="flex gap-4 flex-shrink-0">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_4" value="Đúng" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">ĐÚNG</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="q4_4" value="Sai" class="custom-radio hidden">
+                                <div class="px-6 py-2 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-100 transition select-none">SAI</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CÂU 5: TÌNH HUỐNG -->
+            <div id="card-q5" class="question-card bg-white p-6 rounded-2xl shadow-md border-2 border-gray-100 relative">
+                <div class="flex items-start gap-4 mb-4">
+                    <div class="bg-blue-600 text-white font-black text-xl rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0 shadow">C5</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-blue-900 uppercase">Câu 5 – Tình huống (2 Điểm)</h3>
+                    </div>
+                </div>
+                
+                <div class="bg-amber-50 p-5 rounded-xl border border-amber-200 mb-4">
+                    <p class="text-lg mb-2"><strong>Tình huống:</strong> Em đang thực hành tạo bảng “Khảo sát địa điểm trồng cây” cho dự án “Trường học xanh”. Sau khi nhập dữ liệu vào bảng tính, một số nội dung chưa hiển thị đẹp: tiêu đề chưa nổi bật, chữ chưa được căn chỉnh và một số cột quá hẹp nên không nhìn thấy đầy đủ dữ liệu.</p>
+                    <p class="text-lg font-bold text-blue-900 mt-4">Câu hỏi: Em sẽ thực hiện những thao tác nào để bảng tính dễ đọc và rõ ràng hơn?</p>
+                    <p class="text-sm text-gray-500 italic mt-1">(Gợi ý: Hãy gõ các thao tác em sẽ làm, ví dụ: thay đổi phông chữ, đổi màu nền...)</p>
+                </div>
+
+                <textarea id="q5_answer" rows="4" class="w-full p-4 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition text-lg resize-y" placeholder="Nhập câu trả lời của em vào đây..."></textarea>
+            </div>
+
+            <!-- Nút Chấm Điểm Cuối Trang -->
+            <div class="text-center mt-12 pb-12">
+                <button onclick="confirmSubmit()" id="btn-submit-bottom" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-black text-2xl py-4 px-12 rounded-2xl shadow-xl transform transition hover:-translate-y-1 hover:scale-105">
+                    CHẤM ĐIỂM
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- OVERLAY MÀN HÌNH XÁC NHẬN VÀ KẾT QUẢ -->
+    <div id="modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+        
+        <!-- HỘP THOẠI XÁC NHẬN NỘP BÀI -->
+        <div id="confirm-modal" class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl hidden transform transition-all scale-95 opacity-0">
+            <h3 class="text-2xl font-black text-gray-800 mb-4 text-center">Xác nhận chấm điểm?</h3>
+            <p class="text-lg text-gray-600 text-center mb-8">Em đã hoàn thành xong bài làm và muốn chấm điểm chứ?</p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl transition">Chưa, xem lại</button>
+                <button onclick="submitQuiz()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition">Chắc chắn</button>
+            </div>
+        </div>
+
+        <!-- HỘP THOẠI KẾT QUẢ -->
+        <div id="result-modal" class="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl hidden text-center transform transition-all scale-95 opacity-0 border-t-8 border-green-500">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-4xl">🏆</span>
+            </div>
+            <h2 class="text-3xl font-black text-blue-900 mb-2">KẾT QUẢ BÀI LÀM</h2>
+            <div class="bg-gray-50 rounded-xl p-4 mb-6 text-left">
+                <p class="text-lg mb-1"><strong>Họ và tên:</strong> <span id="res-name" class="text-blue-700"></span></p>
+                <p class="text-lg mb-1"><strong>Lớp:</strong> <span id="res-class" class="text-blue-700"></span></p>
+                <p class="text-lg mb-1"><strong>Số câu đúng hoàn toàn:</strong> <span id="res-perfect" class="text-green-600 font-bold"></span> / 5</p>
+            </div>
+            
+            <div class="mb-2 text-gray-600 font-bold uppercase tracking-wider text-sm">Tổng điểm của em</div>
+            <div class="text-6xl font-black text-pink-600 mb-4">
+                <span id="res-score">0</span><span class="text-3xl text-gray-400">/10</span>
+            </div>
+            
+            <div id="res-feedback" class="text-xl font-bold rounded-xl p-3 mb-6 bg-blue-100 text-blue-800">
+                Xuất sắc!
+            </div>
+            
+            <!-- NÚT NỘP BÀI LÊN GOOGLE SHEETS TỰ ĐỘNG -->
+            <div class="mb-4">
+                <button onclick="manualSyncToSheets()" id="btn-sync-sheet" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl shadow-xl transition transform hover:-translate-y-1 text-lg flex items-center justify-center gap-2">
+                    📊 Nộp bài lên Google Sheets
+                </button>
+            </div>
+
+            <button onclick="viewAnswers()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition transform hover:-translate-y-1 text-lg">
+                XEM LẠI BÀI LÀM
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // URL cấu hình Google Sheets cố định
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhOT_kHnK6KY0dHL0ERRJtQD_fTq3gzGEWQqnQLEYagT_JsObM0J34QAOxpjMKtEa4mw/exec";
+
+        let state = {
+            studentName: '',
+            studentClass: '',
+            timeRemaining: 900,
+            timerInterval: null,
+            isSubmitted: false,
+            lastResultData: null
+        };
+
+        function customAlert(message) {
+            const div = document.createElement('div');
+            div.className = 'fixed bottom-5 right-5 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 font-bold transition-all transform translate-y-2 opacity-0';
+            div.innerText = message;
+            document.body.appendChild(div);
+            setTimeout(() => { div.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+            setTimeout(() => {
+                div.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => div.remove(), 300);
+            }, 3000);
+        }
+
+        const q1_items = [
+            { id: '1', text: 'Nhập dữ liệu vào ô tính', answer: 'A' },
+            { id: '2', text: 'Thay đổi phông chữ', answer: 'B' },
+            { id: '3', text: 'Căn chỉnh dữ liệu trong ô', answer: 'B' },
+            { id: '4', text: 'Thay đổi độ rộng cột', answer: 'B' }
+        ];
+
+        const q2_answers = { 'A': '4', 'B': '1', 'C': '2', 'D': '3' };
+        
+        let q2_links = [];
+        let q2_selected_left = null;
+
+        function initQuestions() {
+            const pool = document.getElementById('q1-pool');
+            // Xáo trộn nhẹ hoặc giữ nguyên thứ tự thẻ kéo
+            q1_items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'draggable-item bg-white border-2 border-gray-300 rounded-lg p-3 shadow-sm font-bold text-gray-700 hover:bg-blue-50 transition cursor-grab';
+                div.draggable = true;
+                div.dataset.id = item.id;
+                div.innerText = item.text;
+                
+                // Sự kiện Drag HTML5
+                div.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', item.id);
+                    div.classList.add('dragging');
+                });
+                div.addEventListener('dragend', () => {
+                    div.classList.remove('dragging');
+                });
+
+                pool.appendChild(div);
+            });
+
+            // Gắn sự kiện cho các vùng drop zones
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('active-target');
+                });
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('active-target');
+                });
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('active-target');
+                    const id = e.dataTransfer.getData('text/plain');
+                    const draggableEl = document.querySelector(`.draggable-item[data-id="${id}"]`);
+                    if (draggableEl) {
+                        zone.appendChild(draggableEl);
+                    }
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                if(state.isSubmitted) return;
+                drawQ2Lines();
+            });
+        }
+
+        function startQuiz() {
+            const nameInput = document.getElementById('input-name').value.trim();
+            const classInput = document.getElementById('input-class').value.trim();
+            
+            if(!nameInput || !classInput) {
+                document.getElementById('login-error').classList.remove('hidden');
+                return;
+            }
+
+            state.studentName = nameInput;
+            state.studentClass = classInput;
+            
+            document.getElementById('display-name').innerText = state.studentName;
+            document.getElementById('display-class').innerText = state.studentClass;
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('quiz-screen').style.display = 'flex';
+            
+            initQuestions();
+            startTimer();
+        }
+
+        function startTimer() {
+            updateTimerDisplay();
+            state.timerInterval = setInterval(() => {
+                state.timeRemaining--;
+                updateTimerDisplay();
+                
+                const progress = (state.timeRemaining / 900) * 100;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                
+                if(state.timeRemaining <= 300) {
+                    document.getElementById('progress-bar').classList.replace('bg-green-500', 'bg-red-500');
+                    document.getElementById('timer-display').classList.add('text-red-600', 'animate-pulse');
+                }
+
+                if (state.timeRemaining <= 0) {
+                    clearInterval(state.timerInterval);
+                    autoSubmit();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(state.timeRemaining / 60).toString().padStart(2, '0');
+            const s = (state.timeRemaining % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}:${s}`;
+        }
+
+        function confirmSubmit() {
+            if(state.isSubmitted) return;
+            const modal = document.getElementById('confirm-modal');
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('scale-95', 'opacity-0');
+                modal.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const overlay = document.getElementById('modal-overlay');
+            modal.classList.remove('scale-100', 'opacity-100');
+            modal.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        function autoSubmit() {
+            customAlert("Hết thời gian làm bài! Hệ thống tự động chấm điểm.");
+            submitQuiz();
+        }
+
+        function handleMatchSelect(el, side) {
+            if (state.isSubmitted) return;
+
+            if (side === 'left') {
+                document.querySelectorAll('.left-item').forEach(i => i.classList.remove('selected'));
+                if (q2_selected_left === el.dataset.id) {
+                    q2_selected_left = null;
+                } else {
+                    el.classList.add('selected');
+                    q2_selected_left = el.dataset.id;
+                }
+            } else if (side === 'right') {
+                if (!q2_selected_left) return;
+                
+                const rightId = el.dataset.id;
+                const leftId = q2_selected_left;
+
+                q2_links = q2_links.filter(link => link.left !== leftId && link.right !== rightId);
+                q2_links.push({ left: leftId, right: rightId });
+                
+                document.querySelectorAll('.left-item').forEach(i => i.classList.remove('selected'));
+                q2_selected_left = null;
+                
+                updateQ2LinkedStyles();
+                drawQ2Lines();
+            }
+        }
+
+        function updateQ2LinkedStyles() {
+            document.querySelectorAll('.match-item').forEach(i => i.classList.remove('linked'));
+            q2_links.forEach(link => {
+                document.querySelector(`.left-item[data-id="${link.left}"]`).classList.add('linked');
+                document.querySelector(`.right-item[data-id="${link.right}"]`).classList.add('linked');
+            });
+        }
+
+        function drawQ2Lines() {
+            const svg = document.getElementById('q2-svg');
+            svg.innerHTML = '';
+            
+            const containerBox = document.getElementById('q2-container').getBoundingClientRect();
+            
+            q2_links.forEach(link => {
+                const leftEl = document.querySelector(`.left-item[data-id="${link.left}"]`);
+                const rightEl = document.querySelector(`.right-item[data-id="${link.right}"]`);
+                
+                if(!leftEl || !rightEl) return;
+
+                const lBox = leftEl.getBoundingClientRect();
+                const rBox = rightEl.getBoundingClientRect();
+                
+                const x1 = lBox.right - containerBox.left;
+                const y1 = lBox.top + lBox.height / 2 - containerBox.top;
+                
+                const x2 = rBox.left - containerBox.left;
+                const y2 = rBox.top + rBox.height / 2 - containerBox.top;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', '#F472B6');
+                line.setAttribute('stroke-width', '4');
+                line.setAttribute('stroke-linecap', 'round');
+                svg.appendChild(line);
+            });
+        }
+
+        function submitQuiz() {
+            state.isSubmitted = true;
+            clearInterval(state.timerInterval);
+            document.getElementById('confirm-modal').classList.add('hidden');
+            
+            document.querySelectorAll('input, textarea').forEach(el => el.disabled = true);
+            document.querySelectorAll('.draggable-item, .match-item').forEach(el => {
+                el.setAttribute('draggable', 'false');
+                el.style.pointerEvents = 'none';
+            });
+            document.getElementById('btn-submit-top').classList.add('hidden');
+            document.getElementById('btn-submit-bottom').classList.add('hidden');
+
+            let totalScore = 0;
+            let perfectCount = 0;
+
+            // Chấm Câu 1: 4 ý, mỗi ý 0.5 điểm = 2 điểm
+            let q1_correct_count = 0;
+            q1_items.forEach(item => {
+                const itemEl = document.querySelector(`.draggable-item[data-id="${item.id}"]`);
+                const parentZone = itemEl.parentElement.dataset.zone;
+                if (parentZone === item.answer) {
+                    q1_correct_count++;
+                }
+            });
+            let q1_score = q1_correct_count * 0.5;
+            totalScore += q1_score;
+            setCardStatus('card-q1', q1_correct_count === 4);
+            if(q1_correct_count === 4) perfectCount++;
+
+            // Chấm Câu 2
+            let q2_correct_count = 0;
+            q2_links.forEach(link => {
+                if (q2_answers[link.left] === link.right) {
+                    q2_correct_count++;
+                }
+            });
+            let q2_score = q2_correct_count * (2 / 4);
+            totalScore += q2_score;
+            setCardStatus('card-q2', q2_correct_count === 4);
+            if(q2_correct_count === 4) perfectCount++;
+
+            // Chấm Câu 3
+            const q3_1_ans = document.querySelector('input[name="q3_1"]:checked')?.value;
+            let q3_1_correct = (q3_1_ans === 'A');
+            if (q3_1_correct) totalScore += 1;
+            
+            const q3_2_ans = document.querySelector('input[name="q3_2"]:checked')?.value;
+            let q3_2_correct = (q3_2_ans === 'B');
+            if (q3_2_correct) totalScore += 1;
+
+            setCardStatus('card-q3', q3_1_correct && q3_2_correct);
+            if(q3_1_correct && q3_2_correct) perfectCount++;
+
+            // Chấm Câu 4
+            const q4_1 = document.querySelector('input[name="q4_1"]:checked')?.value;
+            const q4_2 = document.querySelector('input[name="q4_2"]:checked')?.value;
+            const q4_3 = document.querySelector('input[name="q4_3"]:checked')?.value;
+            const q4_4 = document.querySelector('input[name="q4_4"]:checked')?.value;
+            
+            let q4_correct_count = 0;
+            if (q4_1 === 'Đúng') q4_correct_count++;
+            if (q4_2 === 'Đúng') q4_correct_count++;
+            if (q4_3 === 'Đúng') q4_correct_count++;
+            if (q4_4 === 'Sai') q4_correct_count++;
+
+            let q4_score = q4_correct_count * (2 / 4);
+            totalScore += q4_score;
+            setCardStatus('card-q4', q4_correct_count === 4);
+            if(q4_correct_count === 4) perfectCount++;
+
+            // Chấm Câu 5
+            const q5_ans = document.getElementById('q5_answer').value.toLowerCase();
+            let q5_score = 0;
+            let q5_correct_count = 0;
+            
+            if (q5_ans.includes('phông chữ') || q5_ans.includes('font chữ') || q5_ans.includes('cỡ chữ')) { q5_score += 0.5; q5_correct_count++; }
+            if (q5_ans.includes('màu nền') || q5_ans.includes('đổi màu')) { q5_score += 0.5; q5_correct_count++; }
+            if (q5_ans.includes('căn chỉnh') || q5_ans.includes('căn lề') || q5_ans.includes('căn giữa')) { q5_score += 0.5; q5_correct_count++; }
+            if (q5_ans.includes('độ rộng') || q5_ans.includes('chiều rộng') || q5_ans.includes('kéo rộng') || q5_ans.includes('kích thước cột') || q5_ans.includes('rộng cột')) { q5_score += 0.5; q5_correct_count++; }
+            
+            totalScore += q5_score;
+            setCardStatus('card-q5', q5_correct_count === 4);
+            if(q5_correct_count === 4) perfectCount++;
+
+            totalScore = Math.round(totalScore * 10) / 10;
+
+            // Lưu kết quả để nộp lên Google Sheets
+            state.lastResultData = {
+                timestamp: new Date().toLocaleString('vi-VN'),
+                hoTen: state.studentName,
+                lop: state.studentClass,
+                diem: totalScore,
+                soCauDung: perfectCount
+            };
+
+            showResult(totalScore, perfectCount);
+        }
+
+        function setCardStatus(cardId, isPerfect) {
+            const card = document.getElementById(cardId);
+            if (isPerfect) {
+                card.classList.add('status-correct');
+            } else {
+                card.classList.add('status-incorrect');
+            }
+        }
+
+        function showResult(score, perfectCount) {
+            score = Math.round(score * 10) / 10;
+            
+            document.getElementById('res-name').innerText = state.studentName;
+            document.getElementById('res-class').innerText = state.studentClass;
+            document.getElementById('res-perfect').innerText = perfectCount;
+            document.getElementById('res-score').innerText = score;
+            
+            const feedbackEl = document.getElementById('res-feedback');
+            const percent = (score / 10) * 100;
+            
+            if (percent >= 90) {
+                feedbackEl.innerText = "🎉 Xuất sắc! Em nắm bài rất vững.";
+                feedbackEl.className = "text-xl font-bold rounded-xl p-3 mb-8 bg-green-100 text-green-800";
+            } else if (percent >= 70) {
+                feedbackEl.innerText = "👍 Tốt! Em đã hiểu bài khá tốt.";
+                feedbackEl.className = "text-xl font-bold rounded-xl p-3 mb-8 bg-blue-100 text-blue-800";
+            } else if (percent >= 50) {
+                feedbackEl.innerText = "💪 Cần luyện thêm! Đọc kỹ lại lý thuyết nhé.";
+                feedbackEl.className = "text-xl font-bold rounded-xl p-3 mb-8 bg-yellow-100 text-yellow-800";
+            } else {
+                feedbackEl.innerText = "📖 Xem lại bài nhé! Đừng nản chí, hãy ôn tập lại.";
+                feedbackEl.className = "text-xl font-bold rounded-xl p-3 mb-8 bg-red-100 text-red-800";
+            }
+
+            const modal = document.getElementById('result-modal');
+            const overlay = document.getElementById('modal-overlay');
+            overlay.classList.remove('hidden');
+            modal.classList.remove('hidden');
+            
+            setTimeout(() => {
+                modal.classList.remove('scale-95', 'opacity-0');
+                modal.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function manualSyncToSheets() {
+            const syncBtn = document.getElementById('btn-sync-sheet');
+            syncBtn.innerHTML = "⏳ Đang gửi lên Google Sheets...";
+            syncBtn.style.pointerEvents = 'none';
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(state.lastResultData)
+            })
+            .then(() => {
+                syncBtn.innerHTML = "✅ Đã nộp lên Google Sheets thành công!";
+                syncBtn.className = "w-full bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 cursor-default";
+                customAlert("Đã nộp bài lên Google Sheets thành công!");
+            })
+            .catch(error => {
+                console.error('Lỗi đồng bộ:', error);
+                syncBtn.innerHTML = "❌ Thử lại Nộp lên Google Sheets";
+                syncBtn.style.pointerEvents = 'auto';
+                customAlert("Có lỗi xảy ra khi gửi dữ liệu!");
+            });
+        }
+
+        function viewAnswers() {
+            const modal = document.getElementById('result-modal');
+            const overlay = document.getElementById('modal-overlay');
+            modal.classList.remove('scale-100', 'opacity-100');
+            modal.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+    </script>
+</body>
+</html>
